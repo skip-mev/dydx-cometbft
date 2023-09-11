@@ -631,7 +631,7 @@ func TestEmptyPrepareProposal(t *testing.T) {
 	pa, _ := state.Validators.GetByIndex(0)
 	commit, err := makeValidCommit(height, types.BlockID{}, state.Validators, privVals)
 	require.NoError(t, err)
-	_, err = blockExec.CreateProposalBlock(height, state, commit, pa)
+	_, err = blockExec.CreateProposalBlock(height, state, commit, pa, false)
 	require.NoError(t, err)
 }
 
@@ -672,7 +672,7 @@ func TestPrepareProposalTxsAllIncluded(t *testing.T) {
 	pa, _ := state.Validators.GetByIndex(0)
 	commit, err := makeValidCommit(height, types.BlockID{}, state.Validators, privVals)
 	require.NoError(t, err)
-	block, err := blockExec.CreateProposalBlock(height, state, commit, pa)
+	block, err := blockExec.CreateProposalBlock(height, state, commit, pa, false)
 	require.NoError(t, err)
 
 	for i, tx := range block.Data.Txs {
@@ -723,7 +723,7 @@ func TestPrepareProposalReorderTxs(t *testing.T) {
 	pa, _ := state.Validators.GetByIndex(0)
 	commit, err := makeValidCommit(height, types.BlockID{}, state.Validators, privVals)
 	require.NoError(t, err)
-	block, err := blockExec.CreateProposalBlock(height, state, commit, pa)
+	block, err := blockExec.CreateProposalBlock(height, state, commit, pa, false)
 	require.NoError(t, err)
 	for i, tx := range block.Data.Txs {
 		require.Equal(t, txs[i], tx)
@@ -776,7 +776,7 @@ func TestPrepareProposalErrorOnTooManyTxs(t *testing.T) {
 	commit, err := makeValidCommit(height, types.BlockID{}, state.Validators, privVals)
 	require.NoError(t, err)
 
-	block, err := blockExec.CreateProposalBlock(height, state, commit, pa)
+	block, err := blockExec.CreateProposalBlock(height, state, commit, pa, false)
 	require.Nil(t, block)
 	require.ErrorContains(t, err, "transaction data size exceeds maximum")
 
@@ -824,7 +824,7 @@ func TestPrepareProposalErrorOnPrepareProposalError(t *testing.T) {
 	commit, err := makeValidCommit(height, types.BlockID{}, state.Validators, privVals)
 	require.NoError(t, err)
 
-	block, err := blockExec.CreateProposalBlock(height, state, commit, pa)
+	block, err := blockExec.CreateProposalBlock(height, state, commit, pa, false)
 	require.Nil(t, block)
 	require.ErrorContains(t, err, "an injected error")
 

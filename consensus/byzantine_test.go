@@ -189,7 +189,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 	// proposed will have a valid timestamp
 	lazyProposer := css[1]
 
-	lazyProposer.decideProposal = func(height int64, round int32) {
+	lazyProposer.decideProposal = func(height int64, round int32, isNonProposingNode bool) {
 		lazyProposer.Logger.Info("Lazy Proposer proposing condensed commit")
 		if lazyProposer.privValidator == nil {
 			panic("entered createProposalBlock with privValidator being nil")
@@ -221,7 +221,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 		proposerAddr := lazyProposer.privValidatorPubKey.Address()
 
 		block, err := lazyProposer.blockExec.CreateProposalBlock(
-			lazyProposer.Height, lazyProposer.state, commit, proposerAddr)
+			lazyProposer.Height, lazyProposer.state, commit, proposerAddr, false)
 		require.NoError(t, err)
 		blockParts, err := block.MakePartSet(types.BlockPartSizeBytes)
 		require.NoError(t, err)
@@ -346,8 +346,8 @@ func TestByzantineConflictingProposalsWithPartition(t *testing.T) {
 			// NOTE: Now, test validators are MockPV, which by default doesn't
 			// do any safety checks.
 			css[i].privValidator.(types.MockPV).DisableChecks()
-			css[i].decideProposal = func(j int32) func(int64, int32) {
-				return func(height int64, round int32) {
+			css[i].decideProposal = func(j int32) func(int64, int32, bool) {
+				return func(height int64, round int32, isNonProposingNode bool) {
 					byzantineDecideProposalFunc(t, height, round, css[j], switches[j])
 				}
 			}(int32(i))
@@ -472,7 +472,7 @@ func byzantineDecideProposalFunc(t *testing.T, height int64, round int32, cs *St
 	// Avoid sending on internalMsgQueue and running consensus state.
 
 	// Create a new proposal block from state/txs from the mempool.
-	block1, err := cs.createProposalBlock()
+	block1, err := cs.createProposalBlock(false)
 	require.NoError(t, err)
 	blockParts1, err := block1.MakePartSet(types.BlockPartSizeBytes)
 	require.NoError(t, err)
@@ -489,7 +489,7 @@ func byzantineDecideProposalFunc(t *testing.T, height int64, round int32, cs *St
 	deliverTxsRange(cs, 0, 1)
 
 	// Create a new proposal block from state/txs from the mempool.
-	block2, err := cs.createProposalBlock()
+	block2, err := cs.createProposalBlock(false)
 	require.NoError(t, err)
 	blockParts2, err := block2.MakePartSet(types.BlockPartSizeBytes)
 	require.NoError(t, err)

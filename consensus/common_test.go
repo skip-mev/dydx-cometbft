@@ -207,7 +207,7 @@ func decideProposal(
 	round int32,
 ) (proposal *types.Proposal, block *types.Block) {
 	cs1.mtx.Lock()
-	block, err := cs1.createProposalBlock()
+	block, err := cs1.createProposalBlock(false)
 	require.NoError(t, err)
 	blockParts, err := block.MakePartSet(types.BlockPartSizeBytes)
 	require.NoError(t, err)

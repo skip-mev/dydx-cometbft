@@ -97,6 +97,7 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 	state State,
 	commit *types.Commit,
 	proposerAddr []byte,
+	isNonProposingNode bool,
 ) (*types.Block, error) {
 
 	maxBytes := state.ConsensusParams.Block.MaxBytes
@@ -108,6 +109,27 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 	maxDataBytes := types.MaxDataBytes(maxBytes, evSize, state.Validators.Size())
 
 	txs := blockExec.mempool.ReapMaxBytesMaxGas(maxDataBytes, maxGas)
+
+	if isNonProposingNode {
+		_, err := blockExec.proxyApp.PrepareProposalSync(
+			abci.RequestPrepareProposal{
+				MaxTxBytes:         maxDataBytes,
+				Txs:                nil,
+				LocalLastCommit:    abci.ExtendedCommitInfo{},
+				Misbehavior:        nil,
+				Height:             0,
+				Time:               time.Time{},
+				NextValidatorsHash: nil,
+				ProposerAddress:    nil,
+				IsNonProposingNode: true,
+			},
+		)
+		if err != nil {
+			return nil, err
+		}
+		return nil, nil
+	}
+
 	block := state.MakeBlock(height, txs, commit, evidence, proposerAddr)
 
 	localLastCommit := buildLastCommitInfo(block, blockExec.store, state.InitialHeight)
@@ -121,6 +143,7 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 			Time:               block.Time,
 			NextValidatorsHash: block.NextValidatorsHash,
 			ProposerAddress:    block.ProposerAddress,
+			IsNonProposingNode: false,
 		},
 	)
 	if err != nil {

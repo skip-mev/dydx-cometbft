@@ -127,7 +127,7 @@ type State struct {
 	nSteps int
 
 	// some functions can be overwritten for testing
-	decideProposal func(height int64, round int32)
+	decideProposal func(height int64, round int32, isNonProposingNode bool)
 	doPrevote      func(height int64, round int32)
 	setProposal    func(proposal *types.Proposal) error
 
@@ -1117,12 +1117,13 @@ func (cs *State) enterPropose(height int64, round int32) {
 	// if not a validator, we're done
 	if !cs.Validators.HasAddress(address) {
 		logger.Debug("node is not a validator", "addr", address, "vals", cs.Validators)
+		cs.decideProposal(height, round, true)
 		return
 	}
 
 	if cs.isProposer(address) {
 		logger.Debug("propose step; our turn to propose", "proposer", address)
-		cs.decideProposal(height, round)
+		cs.decideProposal(height, round, false)
 	} else {
 		logger.Debug("propose step; not our turn to propose", "proposer", cs.Validators.GetProposer().Address)
 	}
@@ -1132,9 +1133,22 @@ func (cs *State) isProposer(address []byte) bool {
 	return bytes.Equal(cs.Validators.GetProposer().Address, address)
 }
 
-func (cs *State) defaultDecideProposal(height int64, round int32) {
+func (cs *State) defaultDecideProposal(height int64, round int32, isNonProposingNode bool) {
 	var block *types.Block
 	var blockParts *types.PartSet
+
+	if isNonProposingNode {
+		// Create a new proposal block from state/txs from the mempool.
+		var err error
+		block, err = cs.createProposalBlock(isNonProposingNode)
+		if err != nil {
+			cs.Logger.Error("unable to create proposal block as a non-proposing node", "error", err)
+			return
+		} else if block == nil {
+			cs.Logger.Error("error", "error", "Method createProposalBlock should not provide a nil block without errors")
+		}
+		return
+	}
 
 	// Decide on block
 	if cs.ValidBlock != nil {
@@ -1143,7 +1157,7 @@ func (cs *State) defaultDecideProposal(height int64, round int32) {
 	} else {
 		// Create a new proposal block from state/txs from the mempool.
 		var err error
-		block, err = cs.createProposalBlock()
+		block, err = cs.createProposalBlock(isNonProposingNode)
 		if err != nil {
 			cs.Logger.Error("unable to create proposal block", "error", err)
 			return
@@ -1207,7 +1221,16 @@ func (cs *State) isProposalComplete() bool {
 //
 // NOTE: keep it side-effect free for clarity.
 // CONTRACT: cs.privValidator is not nil.
-func (cs *State) createProposalBlock() (*types.Block, error) {
+func (cs *State) createProposalBlock(isNonProposingNode bool) (*types.Block, error) {
+
+	if isNonProposingNode {
+		ret, err := cs.blockExec.CreateProposalBlock(0, cs.state, nil, nil, isNonProposingNode)
+		if err != nil {
+			return ret, err
+		}
+		return ret, nil
+	}
+
 	if cs.privValidator == nil {
 		return nil, errors.New("entered createProposalBlock with privValidator being nil")
 	}
@@ -1235,7 +1258,7 @@ func (cs *State) createProposalBlock() (*types.Block, error) {
 
 	proposerAddr := cs.privValidatorPubKey.Address()
 
-	ret, err := cs.blockExec.CreateProposalBlock(cs.Height, cs.state, commit, proposerAddr)
+	ret, err := cs.blockExec.CreateProposalBlock(cs.Height, cs.state, commit, proposerAddr, isNonProposingNode)
 	if err != nil {
 		panic(err)
 	}

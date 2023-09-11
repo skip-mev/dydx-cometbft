@@ -134,6 +134,8 @@ message RequestPrepareProposal {
   bytes                     next_validators_hash = 7;
   // address of the public key of the validator proposing the block.
   bytes proposer_address = 8;
+  // true/false value if calling PrepareProposal as a non-proposing-node
+  bool is_non_proposing_node = 9;
 }
 
 message RequestProcessProposal {

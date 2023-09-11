@@ -8,7 +8,7 @@ import (
 	fmt "fmt"
 	subaccounts "github.com/cometbft/cometbft/proto/dydxcometbft/subaccounts"
 	_ "github.com/cosmos/gogoproto/gogoproto"
-	proto "github.com/cosmos/gogoproto/proto"
+	proto "github.com/gogo/protobuf/proto"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -491,7 +491,6 @@ type Order struct {
 	// Information about when the order expires.
 	//
 	// Types that are valid to be assigned to GoodTilOneof:
-	//
 	//	*Order_GoodTilBlock
 	//	*Order_GoodTilBlockTime
 	GoodTilOneof isOrder_GoodTilOneof `protobuf_oneof:"good_til_oneof"`

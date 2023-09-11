@@ -9,8 +9,7 @@ import (
 	fmt "fmt"
 	_ "github.com/cosmos/cosmos-proto"
 	_ "github.com/cosmos/gogoproto/gogoproto"
-	grpc1 "github.com/cosmos/gogoproto/grpc"
-	proto "github.com/cosmos/gogoproto/proto"
+	proto "github.com/gogo/protobuf/proto"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -668,10 +667,10 @@ type MsgClient interface {
 }
 
 type msgClient struct {
-	cc grpc1.ClientConn
+	cc *grpc.ClientConn
 }
 
-func NewMsgClient(cc grpc1.ClientConn) MsgClient {
+func NewMsgClient(cc *grpc.ClientConn) MsgClient {
 	return &msgClient{cc}
 }
 
@@ -727,7 +726,7 @@ func (*UnimplementedMsgServer) CancelOrder(ctx context.Context, req *MsgCancelOr
 	return nil, status.Errorf(codes.Unimplemented, "method CancelOrder not implemented")
 }
 
-func RegisterMsgServer(s grpc1.Server, srv MsgServer) {
+func RegisterMsgServer(s *grpc.Server, srv MsgServer) {
 	s.RegisterService(&_Msg_serviceDesc, srv)
 }
 
